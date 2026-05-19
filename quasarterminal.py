@@ -40,6 +40,7 @@ import pandas as pd
 #!pip install cufflinks
 import cufflinks as cf
 from plotly.offline import iplot
+from plotly.subplots import make_subplots
 cf.go_offline()
 
 import plotly.graph_objects as go
