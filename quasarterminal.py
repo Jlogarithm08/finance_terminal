@@ -233,9 +233,19 @@ data_exp.download_button(
 
 title_str = f"{tickers_companies_dict[ticker]}'s stock price"
 
-fig = go.Figure()
+# Create subplots
+fig = make_subplots(
+    rows=2,
+    cols=1,
+    shared_xaxes=True,
+    vertical_spacing=0.05,
+    row_heights=[0.7, 0.3]
+)
 
-# Candlestick
+# =========================
+# Candlestick Chart
+# =========================
+
 fig.add_trace(
     go.Candlestick(
         x=df.index,
@@ -244,14 +254,22 @@ fig.add_trace(
         low=df['Low'],
         close=df['Close'],
         name='Price'
-    )
+    ),
+    row=1,
+    col=1
 )
 
+# =========================
 # SMA
+# =========================
+
 if sma_flag:
+
     if isinstance(sma_periods, int):
         sma_periods = [sma_periods]
+
     for period in sma_periods:
+
         sma = df['Close'].rolling(period).mean()
 
         fig.add_trace(
@@ -260,11 +278,17 @@ if sma_flag:
                 y=sma,
                 mode='lines',
                 name=f'SMA {period}'
-            )
+            ),
+            row=1,
+            col=1
         )
 
+# =========================
 # Bollinger Bands
+# =========================
+
 if bb_flag:
+
     sma_bb = df['Close'].rolling(bb_periods).mean()
     std_bb = df['Close'].rolling(bb_periods).std()
 
@@ -277,7 +301,9 @@ if bb_flag:
             y=upper_band,
             mode='lines',
             name='Upper BB'
-        )
+        ),
+        row=1,
+        col=1
     )
 
     fig.add_trace(
@@ -286,18 +312,72 @@ if bb_flag:
             y=lower_band,
             mode='lines',
             name='Lower BB'
-        )
+        ),
+        row=1,
+        col=1
     )
 
+# =========================
+# RSI
+# =========================
+
+if rsi_flag:
+
+    delta = df['Close'].diff()
+
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+
+    avg_gain = gain.rolling(rsi_periods).mean()
+    avg_loss = loss.rolling(rsi_periods).mean()
+
+    rs = avg_gain / avg_loss
+
+    rsi = 100 - (100 / (1 + rs))
+
+    fig.add_trace(
+        go.Scatter(
+            x=df.index,
+            y=rsi,
+            mode='lines',
+            name='RSI'
+        ),
+        row=2,
+        col=1
+    )
+
+    # RSI upper band
+    fig.add_hline(
+        y=rsi_upper,
+        line_dash="dash",
+        row=2,
+        col=1
+    )
+
+    # RSI lower band
+    fig.add_hline(
+        y=rsi_lower,
+        line_dash="dash",
+        row=2,
+        col=1
+    )
+
+# =========================
 # Layout
+# =========================
+
 fig.update_layout(
     title=title_str,
-    xaxis_title='Date',
-    yaxis_title='Price',
     xaxis_rangeslider_visible=False,
-    height=700
+    height=900
 )
 
-st.plotly_chart(fig, use_container_width=True)
-#streamlit run quasarterminal.py
+# Axis labels
+fig.update_yaxes(title_text="Price", row=1, col=1)
+fig.update_yaxes(title_text="RSI", row=2, col=1)
 
+# =========================
+# Streamlit Display
+# =========================
+
+st.plotly_chart(fig, width="stretch")
